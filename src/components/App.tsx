@@ -10,21 +10,23 @@ class App extends React.Component<Record<string, unknown>, any> {
   constructor(props) {
     super(props);
     this.state = {
-      state: {}
+      result: {},
+      loading: false
     }
   }
 
   async componentWillMount() {
+    this.setState({ loading: true });
     const wsProvider = new WsProvider('wss://rpc.polkadot.io');
     const api = await ApiPromise.create({ provider: wsProvider });
-    this.setState({ state: { genesisHash: api.genesisHash.toHex() } });
+    this.setState({ result: { genesisHash: api.genesisHash.toHex() }, loading: false });
   }
 
   public render() {
     return (
       <div className="app">
         <h1>Kusama</h1>
-        <pre>{JSON.stringify(this.state, undefined, 2)}</pre>
+        { this.state.loading ? (<p>Loading...</p>) : (<pre>{JSON.stringify(this.state.result, undefined, 2)}</pre>) }
       </div>
     );
   }

@@ -71,6 +71,7 @@
     "webpack-merge": "^4.2.2"
   },
   "dependencies": {
-    "@polkadot/api": "^1.29.1"
+    "@polkadot/api": "^1.29.1",
+    "@polkadot/util": "^3.2.1"
   }
 }

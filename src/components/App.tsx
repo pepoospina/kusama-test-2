@@ -1,12 +1,33 @@
 import * as React from "react";
-import { hot } from "react-hot-loader";
-import { ApiPromise, WsProvider } from '@polkadot/api';
+import { ApiPromise, WsProvider } from "@polkadot/api";
+import { hexToString } from "@polkadot/util";
 
 const reactLogo = require("./../assets/img/react_logo.svg");
 import "./../assets/scss/App.scss";
 
-class App extends React.Component<Record<string, unknown>, any> {
+const validIdentityEntries = (identityCoded: any) => {
+  const identity = identityCoded.toJSON();
+  if (!identity || !identity.info) return {};
 
+  const identityData = Object.getOwnPropertyNames(identity.info)
+    .map((prop: any) =>
+      identity.info[prop] !== null && identity.info[prop].Raw !== undefined
+        ? { [prop]: hexToString(identity.info[prop].Raw) }
+        : undefined,
+    )
+    .filter((e) => !!e);
+
+  let identityInfo = {};
+  identityData.forEach((e) => {
+    const name = Object.getOwnPropertyNames(e)[0];
+    const value = e[name];
+    identityInfo[name] = value;
+  });
+
+  return identityInfo;
+};
+
+class App extends React.Component<Record<string, unknown>, any> {
   blockInput: HTMLInputElement;
 
   constructor(props) {
@@ -14,8 +35,9 @@ class App extends React.Component<Record<string, unknown>, any> {
     this.state = {
       result: {},
       loading: false,
-      blockNumber: 3351476
-    }
+      blockNumber: 3351476,
+      address: "DqpNAWBTgPQFETepyPvigwrY6eTxtKS6obajvai8h7G18pn",
+    };
   }
 
   async componentWillMount() {
@@ -24,37 +46,59 @@ class App extends React.Component<Record<string, unknown>, any> {
 
   async load() {
     const blockNumber = this.state.blockNumber;
+    const address = this.state.address;
     this.setState({ loading: true });
-    const wsProvider = new WsProvider('wss://kusama-rpc.polkadot.io');
+    const wsProvider = new WsProvider("wss://kusama-rpc.polkadot.io");
     const api = await ApiPromise.create({ provider: wsProvider });
-    const blockHash = await api.rpc.chain.getBlockHash(blockNumber)
-    const timestamp = await api.query.timestamp.now.at(blockHash);
-    const date = new Date((timestamp as any)*1000);
-    this.setState({ result: { 
-      genesisHash: api.genesisHash.toHex(),
-      now: date.toDateString(),
-      chain: await api.rpc.system.chain(),
-      address: await api.query.system.account.at(blockHash, 'DqpNAWBTgPQFETepyPvigwrY6eTxtKS6obajvai8h7G18pn'),
-      members: await api.query.council.members.at(blockHash)
-    }, loading: false });
+    const blockHash = await api.rpc.chain.getBlockHash(blockNumber);
+    const timestamp: any = await api.query.timestamp.now.at(blockHash);
+    const date = new Date(timestamp.toNumber());
+
+    const identity = await api.query.identity.identityOf.at(blockHash, address);
+
+    const identityInfo = validIdentityEntries(identity);
+
+    this.setState({
+      result: {
+        timestamp: date.toUTCString(),
+        chain: await api.rpc.system.chain(),
+        address: await api.query.system.account.at(blockHash, address),
+        identity: identityInfo,
+        members: await api.query.council.members.at(blockHash),
+      },
+      loading: false,
+    });
   }
 
   blockChanged(e: any) {
-    this.setState({ blockNumber: e.target.value })
+    this.setState({ blockNumber: e.target.value });
+  }
+
+  addressChanged(e: any) {
+    this.setState({ address: e.target.value });
   }
 
   public render() {
     return (
       <div className="app">
         <h1>Kusama</h1>
-        <input value={this.state.blockNumber} onChange={evt => this.blockChanged(evt)}></input>
+        <input
+          value={this.state.blockNumber}
+          onChange={(evt) => this.blockChanged(evt)}
+        ></input>
+        <input
+          value={this.state.address}
+          onChange={(evt) => this.addressChanged(evt)}
+        ></input>
         <button onClick={() => this.load()}>update</button>
-        { this.state.loading ? (<p>Loading...</p>) : (<pre>{JSON.stringify(this.state.result, undefined, 2)}</pre>) }
+        {this.state.loading ? (
+          <p>Loading...</p>
+        ) : (
+          <pre>{JSON.stringify(this.state.result, undefined, 2)}</pre>
+        )}
       </div>
     );
   }
 }
 
-declare let module: Record<string, unknown>;
-
-export default hot(module)(App);
+export default App;

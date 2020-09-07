@@ -48,13 +48,16 @@ class App extends React.Component<Record<string, unknown>, any> {
     const blockNumber = this.state.blockNumber;
     const address = this.state.address;
     this.setState({ loading: true });
-    const wsProvider = new WsProvider("wss://kusama-rpc.polkadot.io");
+    const wsProvider = new WsProvider("ws://127.0.0.1:9944");
     const api = await ApiPromise.create({ provider: wsProvider });
     const blockHash = await api.rpc.chain.getBlockHash(blockNumber);
     const timestamp: any = await api.query.timestamp.now.at(blockHash);
     const date = new Date(timestamp.toNumber());
 
     const identity = await api.query.identity.identityOf.at(blockHash, address);
+
+    // add an html input to set a cid and a button to store that cid on the user identity space.
+    // check that reading the identity can get the cid string.
 
     const identityInfo = validIdentityEntries(identity);
 

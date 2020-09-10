@@ -72,6 +72,7 @@
   },
   "dependencies": {
     "@polkadot/api": "^1.29.1",
+    "@polkadot/extension-dapp": "^0.33.4",
     "@polkadot/util": "^3.2.1"
   }
 }
